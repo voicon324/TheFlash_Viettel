@@ -8,6 +8,7 @@ import subprocess
 import sys
 import time
 import urllib.request
+import urllib.error
 import zipfile
 from pathlib import Path
 
@@ -87,6 +88,36 @@ def write_summary(summary: dict) -> None:
     (WORK / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
 
 
+def wait_for_server(url: str, timeout_s: int, summary: dict) -> bool:
+    deadline = time.time() + timeout_s
+    attempts = 0
+    last_error = None
+    while time.time() < deadline:
+        attempts += 1
+        try:
+            with urllib.request.urlopen(url, timeout=5) as response:
+                if 200 <= response.status < 500:
+                    summary["server_ready"] = {
+                        "ready": True,
+                        "attempts": attempts,
+                        "elapsed_s": round(timeout_s - (deadline - time.time()), 1),
+                        "status": response.status,
+                    }
+                    write_summary(summary)
+                    return True
+        except Exception as exc:  # noqa: BLE001
+            last_error = repr(exc)
+        time.sleep(5)
+    summary["server_ready"] = {
+        "ready": False,
+        "attempts": attempts,
+        "elapsed_s": timeout_s,
+        "last_error": last_error,
+    }
+    write_summary(summary)
+    return False
+
+
 def main() -> int:
     WORK.mkdir(parents=True, exist_ok=True)
     ensure_source_files()
@@ -137,29 +168,29 @@ def main() -> int:
         summary["commands"]["vllm_pid"] = proc.pid
         write_summary(summary)
         try:
-            time.sleep(90)
-            replay = run(
-                [
-                    sys.executable,
-                    str(REPLAY),
-                    "--trace",
-                    str(TRACE),
-                    "--endpoint",
-                    "http://127.0.0.1:8000/v1/chat/completions",
-                    "--output-dir",
-                    str(WORK / "replay"),
-                    "--limit",
-                    os.environ.get("TRACK3_REPLAY_LIMIT", "8"),
-                    "--time-scale",
-                    "1",
-                ],
-                WORK / "replay.log",
-                timeout=1800,
-            )
-            summary["commands"]["replay_exit_code"] = replay.returncode
-            replay_summary = WORK / "replay" / "summary.json"
-            if replay_summary.exists():
-                summary["replay_summary"] = json.loads(replay_summary.read_text(encoding="utf-8"))
+            if wait_for_server("http://127.0.0.1:8000/health", int(os.environ.get("TRACK3_SERVER_TIMEOUT", "600")), summary):
+                replay = run(
+                    [
+                        sys.executable,
+                        str(REPLAY),
+                        "--trace",
+                        str(TRACE),
+                        "--endpoint",
+                        "http://127.0.0.1:8000/v1/chat/completions",
+                        "--output-dir",
+                        str(WORK / "replay"),
+                        "--limit",
+                        os.environ.get("TRACK3_REPLAY_LIMIT", "8"),
+                        "--time-scale",
+                        "1",
+                    ],
+                    WORK / "replay.log",
+                    timeout=1800,
+                )
+                summary["commands"]["replay_exit_code"] = replay.returncode
+                replay_summary = WORK / "replay" / "summary.json"
+                if replay_summary.exists():
+                    summary["replay_summary"] = json.loads(replay_summary.read_text(encoding="utf-8"))
         finally:
             proc.terminate()
             try:
