@@ -1,0 +1,2 @@
+aiohttp>=3.9
+lm-eval[api]>=0.4.5

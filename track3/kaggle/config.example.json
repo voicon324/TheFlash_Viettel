@@ -1,0 +1,20 @@
+{
+  "accounts": [
+    {
+      "name": "default",
+      "kaggle_json": "track3/kaggle_runs/accounts/default/kaggle.json",
+      "max_running": 1
+    }
+  ],
+  "jobs": [
+    {
+      "job_id": "track3-p100-vllm-smoke",
+      "title": "TheFlash Track3 P100 vLLM Smoke",
+      "template_dir": "track3/kaggle/p100_vllm_smoke",
+      "accelerator": "gpu",
+      "output_pattern": ".*(zip|log|json)$",
+      "expected_zip": "track3_p100_vllm_smoke_result.zip",
+      "timeout_minutes": 180
+    }
+  ]
+}
