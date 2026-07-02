@@ -163,6 +163,8 @@ def main() -> int:
             "--gpu-memory-utilization",
             os.environ.get("TRACK3_GPU_MEMORY_UTIL", "0.90"),
             "--enable-prefix-caching",
+            "--chat-template-content-format",
+            "string",
         ]
         proc = subprocess.Popen(server_cmd, stdout=server_log, stderr=subprocess.STDOUT, text=True)
         summary["commands"]["vllm_pid"] = proc.pid
