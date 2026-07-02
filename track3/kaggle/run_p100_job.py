@@ -98,10 +98,12 @@ def main() -> int:
     account = config["accounts"][0]
     job = next(j for j in config["jobs"] if j["job_id"] == args.job_id)
     job_dir = RUN_ROOT / "jobs" / job["job_id"]
-    output_dir = job_dir / "output"
-    output_dir.mkdir(parents=True, exist_ok=True)
-
     kernel_dir, kernel_id, _username = stage_job(config, job, account)
+    slug = kernel_id.split("/", 1)[1]
+    output_dir = job_dir / "output" / slug
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
     url = f"https://www.kaggle.com/code/{kernel_id}"
     write_dashboard(job["job_id"], account["name"], "submitting", url, job["expected_zip"])
     log(f"submitting job={job['job_id']} account={account['name']} url={url}")
