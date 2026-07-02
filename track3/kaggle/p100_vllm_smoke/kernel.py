@@ -165,12 +165,13 @@ def main() -> int:
             "--enable-prefix-caching",
             "--chat-template-content-format",
             "string",
+            "--enforce-eager",
         ]
         proc = subprocess.Popen(server_cmd, stdout=server_log, stderr=subprocess.STDOUT, text=True)
         summary["commands"]["vllm_pid"] = proc.pid
         write_summary(summary)
         try:
-            if wait_for_server("http://127.0.0.1:8000/health", int(os.environ.get("TRACK3_SERVER_TIMEOUT", "600")), summary):
+            if wait_for_server("http://127.0.0.1:8000/health", int(os.environ.get("TRACK3_SERVER_TIMEOUT", "1200")), summary):
                 replay = run(
                     [
                         sys.executable,
