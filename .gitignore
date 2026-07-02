@@ -6,6 +6,7 @@ __MACOSX/
 **/__MACOSX/
 *.json
 !track3/kaggle/p100_vllm_smoke/kernel-metadata.json
+!track3/kaggle/*/kernel-metadata.json
 !track3/kaggle/config.example.json
 track3/kaggle_runs/
 track3/results/
